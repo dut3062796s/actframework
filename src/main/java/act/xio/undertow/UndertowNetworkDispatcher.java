@@ -1,4 +1,4 @@
-package act.app.event;
+package act.xio.undertow;
 
 /*-
  * #%L
@@ -20,25 +20,30 @@ package act.app.event;
  * #L%
  */
 
-import act.app.App;
-import act.event.ActEvent;
-import act.event.SystemEvent;
+import act.xio.NetworkDispatcher;
+import act.xio.NetworkJob;
+import io.undertow.server.HttpServerExchange;
 
-public abstract class AppEvent extends ActEvent<App> implements SystemEvent {
+class UndertowNetworkDispatcher implements NetworkDispatcher {
 
-    private AppEventId id;
+    final HttpServerExchange exchange;
+    private boolean dispatched;
 
-    public AppEvent(AppEventId id, App source) {
-        super(source);
-        this.id = id;
+    UndertowNetworkDispatcher(HttpServerExchange exchange) {
+        this.exchange = exchange;
     }
 
     @Override
-    public String toString() {
-        return id.name();
+    public void dispatch(NetworkJob job) {
+        exchange.dispatch(job);
+        this.dispatched = true;
     }
 
-    public int id() {
-        return id.ordinal();
+    @Override
+    public void keep() {
+        if (!this.dispatched) {
+            exchange.getRequestChannel().resumeReads();
+        }
     }
+
 }

@@ -467,7 +467,9 @@ public class App extends DestroyableBase {
 
     @Override
     protected void releaseResources() {
-        mainThread.interrupt();
+        // shall not interrupt main thread
+        // see https://stackoverflow.com/questions/44665552/undertow-xnio-i-o-thread-consistently-eat-cpu
+        // mainThread.interrupt();
         if (null == daemonRegistry) {
             return;
         }
@@ -623,7 +625,7 @@ public class App extends DestroyableBase {
             if (!dbServiceManager().hasDbService() || eventEmitted(DB_SVC_LOADED)) {
                 runnable.run();
             } else {
-                jobManager().on(DB_SVC_LOADED, runnable, true);
+                jobManager().on(DB_SVC_LOADED, "app-refresh-after-db-svc-loaded", runnable, true);
             }
         } catch (BlockIssueSignal e) {
             // ignore
