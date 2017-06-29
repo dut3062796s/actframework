@@ -25,6 +25,9 @@ import act.app.AppServiceBase;
 import act.util.ActContext;
 import act.util.PropertySpec;
 import org.joda.time.*;
+import org.osgl.$;
+import org.osgl.logging.LogManager;
+import org.osgl.logging.Logger;
 import org.osgl.util.C;
 import org.rythmengine.utils.S;
 
@@ -39,6 +42,8 @@ import java.util.*;
  * Keep the property information of Data class
  */
 public class DataPropertyRepository extends AppServiceBase<DataPropertyRepository> {
+
+    private static final Logger LOGGER = LogManager.get(DataPropertyRepository.class);
 
     /**
      * all classes that can NOT be decomposed in terms of get properties
@@ -120,7 +125,16 @@ public class DataPropertyRepository extends AppServiceBase<DataPropertyRepositor
         if (Class.class.equals(c)) {
             return;
         }
-        if (Enum.class.isAssignableFrom(c)) {
+        if (c.isArray()) {
+            Class componentType = c.getComponentType();
+            List<String> retTypeProperties = propertyListOf(componentType);
+            context = context + propName + ".";
+            for (String s: retTypeProperties) {
+                repo.add(context + s);
+            }
+            return;
+        }
+        if ($.isSimpleType(c)) {
             repo.add(context + propName);
             return;
         }
@@ -161,27 +175,9 @@ public class DataPropertyRepository extends AppServiceBase<DataPropertyRepositor
 
     private void _init() {
         Set<Class> s = C.newSet();
-        s.add(boolean.class);
-        s.add(byte.class);
-        s.add(char.class);
-        s.add(short.class);
-        s.add(int.class);
-        s.add(float.class);
-        s.add(long.class);
-        s.add(double.class);
-
-        s.add(Boolean.class);
-        s.add(Byte.class);
-        s.add(Character.class);
-        s.add(Short.class);
-        s.add(Integer.class);
-        s.add(Float.class);
-        s.add(Long.class);
-        s.add(Double.class);
         s.add(BigDecimal.class);
         s.add(BigInteger.class);
 
-        s.add(String.class);
         s.add(Date.class);
         s.add(java.sql.Date.class);
         s.add(Calendar.class);
