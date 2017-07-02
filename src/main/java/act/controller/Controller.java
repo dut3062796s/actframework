@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import static org.osgl.http.H.Format.*;
+import static org.osgl.mvc.result.Redirect.F.*;
 
 /**
  * Mark a class as Controller, which contains at least one of the following:
@@ -429,8 +430,7 @@ public @interface Controller {
             forbiddenIf(!test, msg, args);
         }
 
-        public static Redirect redirect(String url, Object... args) {
-            url = S.fmt(url, args);
+        private static String processUrl(String url) {
             if (url.contains(".") || url.contains("(")) {
                 String inferFullActionPath = Router.inferFullActionPath(url);
                 if (inferFullActionPath != url) {
@@ -445,13 +445,26 @@ public @interface Controller {
                     }
                 }
             }
-            return Redirect.of(url);
+            return url;
+        }
+
+        private static <T extends RedirectBase> T _redirect($.Function<String, T> func, String url, Object... args) {
+            url = processUrl(S.fmt(url, args));
+            return func.apply(url);
+        }
+
+        private static <T extends Redirect> T _redirect($.Function<String, T> func, String url, Map reverseRoutingArguments) {
+            url = Router.inferFullActionPath(url);
+            url = ActionContext.current().router().reverseRoute(url, reverseRoutingArguments);
+            return func.apply(url);
+        }
+
+        public static Redirect redirect(String url, Object... args) {
+            return _redirect(REDIRECT, url, args);
         }
 
         public static Redirect redirect(String url, Map reverseRoutingArguments) {
-            url = Router.inferFullActionPath(url);
-            url = ActionContext.current().router().reverseRoute(url, reverseRoutingArguments);
-            return Redirect.of(url);
+            return _redirect(REDIRECT, url, reverseRoutingArguments);
         }
 
         public static void redirectIf(boolean test, String url, Object... args) {
@@ -472,6 +485,118 @@ public @interface Controller {
 
         public static void redirectIfNot(boolean test, String url, Map reverseRoutingArguments) {
             redirectIf(!test, url, reverseRoutingArguments);
+        }
+
+        public static MovedPermanently movedPermanently(String url, Object... args) {
+            return _redirect(MOVED_PERMANENTLY, url, args);
+        }
+
+        public static MovedPermanently movedPermanently(String url, Map reverseRoutingArguments) {
+            return _redirect(MOVED_PERMANENTLY, url, reverseRoutingArguments);
+        }
+
+        public static void movedPermanentlyIf(boolean test, String url, Object... args) {
+            if (test) {
+                throw movedPermanently(url, args);
+            }
+        }
+
+        public static void movedPermanentlyIfNot(boolean test, String url, Object... args) {
+            movedPermanentlyIf(!test, url, args);
+        }
+
+        public static void movedPermanentlyIf(boolean test, String url, Map reverseRoutingArguments) {
+            if (test) {
+                throw movedPermanently(url, reverseRoutingArguments);
+            }
+        }
+
+        public static void movedPermanentlyIfNot(boolean test, String url, Map reverseRoutingArguments) {
+            movedPermanentlyIf(!test, url, reverseRoutingArguments);
+        }
+
+        public static Found found(String url, Object... args) {
+            return _redirect(FOUND, url, args);
+        }
+
+        public static Found found(String url, Map reverseRoutingArguments) {
+            return _redirect(FOUND, url, reverseRoutingArguments);
+        }
+
+        public static void foundIf(boolean test, String url, Object... args) {
+            if (test) {
+                throw found(url, args);
+            }
+        }
+
+        public static void foundIfNot(boolean test, String url, Object... args) {
+            foundIf(!test, url, args);
+        }
+
+        public static void foundIf(boolean test, String url, Map reverseRoutingArguments) {
+            if (test) {
+                throw found(url, reverseRoutingArguments);
+            }
+        }
+
+        public static void foundIfNot(boolean test, String url, Map reverseRoutingArguments) {
+            foundIf(!test, url, reverseRoutingArguments);
+        }
+
+        public static SeeOther seeOther(String url, Object... args) {
+            return _redirect(SEE_OTHER, url, args);
+        }
+
+        public static SeeOther seeOther(String url, Map reverseRoutingArguments) {
+            return _redirect(SEE_OTHER, url, reverseRoutingArguments);
+        }
+
+        public static void seeOtherIf(boolean test, String url, Object... args) {
+            if (test) {
+                throw seeOther(url, args);
+            }
+        }
+
+        public static void seeOtherIfNot(boolean test, String url, Object... args) {
+            seeOtherIf(!test, url, args);
+        }
+
+        public static void seeOtherIf(boolean test, String url, Map reverseRoutingArguments) {
+            if (test) {
+                throw seeOther(url, reverseRoutingArguments);
+            }
+        }
+
+        public static void seeOtherIfNot(boolean test, String url, Map reverseRoutingArguments) {
+            seeOtherIf(!test, url, reverseRoutingArguments);
+        }
+
+        public static TemporaryRedirect temporaryRedirect(String url, Object... args) {
+            return _redirect(TEMPORARY_REDIRECT, url, args);
+        }
+
+        public static TemporaryRedirect temporaryRedirect(String url, Map reverseRoutingArguments) {
+            return _redirect(TEMPORARY_REDIRECT, url, reverseRoutingArguments);
+        }
+
+        public static void temporaryRedirectIf(boolean test, String url, Object... args) {
+            if (test) {
+                throw found(url, args);
+            }
+        }
+
+        public static void temporaryRedirectIfNot(boolean test, String url, Object... args) {
+            temporaryRedirectIf(!test, url, args);
+        }
+
+        public static void temporaryRedirectIf(boolean test, String url, Map reverseRoutingArguments) {
+            if (test) {
+                throw temporaryRedirect(url, reverseRoutingArguments);
+            }
+        }
+
+        public static void temporaryRedirectIfNot(boolean test, String url, Map reverseRoutingArguments) {
+            temporaryRedirectIf(!test, url, reverseRoutingArguments);
         }
 
         /**
