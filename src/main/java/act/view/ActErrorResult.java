@@ -24,6 +24,7 @@ import act.Act;
 import act.app.*;
 import act.asm.AsmContext;
 import act.asm.AsmException;
+import act.controller.Controller;
 import act.exception.BindException;
 import act.util.ActError;
 import org.osgl.$;
@@ -45,6 +46,13 @@ public class ActErrorResult extends ErrorResult implements ActError {
 
     protected SourceInfo sourceInfo;
 
+    public ActErrorResult(Throwable cause) {
+        super(H.Status.of(userDefinedStatusCode(cause.getClass())));
+        initCause(cause);
+        init();
+        populateSourceInfo(cause);
+    }
+
     public ActErrorResult(H.Status status) {
         super(status);
         init();
@@ -57,55 +65,23 @@ public class ActErrorResult extends ErrorResult implements ActError {
         populateSourceInfo();
     }
 
-    public ActErrorResult(H.Status status, int errorCode) {
-        super(status, errorCode);
-        init();
-        populateSourceInfo();
-    }
-
-    public ActErrorResult(H.Status status, int errorCode, String message, Object... args) {
-        super(status, errorCode, message, args);
-        init();
-        populateSourceInfo();
-    }
-
-    public ActErrorResult(Throwable cause) {
-        super(H.Status.INTERNAL_SERVER_ERROR, cause);
-        init();
-        populateSourceInfo(cause);
-    }
-
     private ActErrorResult(AsmException exception, boolean scanning) {
-        super(H.Status.INTERNAL_SERVER_ERROR, exception.getCause(), errorMsg(exception, scanning));
+        super(H.Status.of(userDefinedStatusCode(exception.getClass())), errorMsg(exception, scanning));
+        initCause(exception.getCause());
         init();
         populateSourceInfo(exception.context());
     }
 
-    private static String errorMsg(AsmException exception, boolean scanning) {
-        String userMsg = exception.getLocalizedMessage();
-        return (S.blank(userMsg)) ? S.concat("Error ", scanning ? "scanning" : "enhancing", " bytecode at ", exception.context().toString()) : userMsg;
-    }
-
     public ActErrorResult(H.Status status, Throwable cause) {
-        super(status, cause);
+        super(status);
+        initCause(cause);
         init();
         populateSourceInfo(cause);
     }
 
     public ActErrorResult(H.Status status, Throwable cause, String message, Object... args) {
-        super(status, cause, message, args);
-        init();
-        populateSourceInfo(cause);
-    }
-
-    public ActErrorResult(H.Status status, int errorCode, Throwable cause, String message, Object ... args) {
-        super(status, errorCode, cause, message, args);
-        init();
-        populateSourceInfo(cause);
-    }
-
-    public ActErrorResult(H.Status status, int errorCode, Throwable cause) {
-        super(status, errorCode, cause);
+        super(status, message, args);
+        initCause(cause);
         init();
         populateSourceInfo(cause);
     }
@@ -118,13 +94,6 @@ public class ActErrorResult extends ErrorResult implements ActError {
 
     public SourceInfo sourceInfo() {
         return sourceInfo;
-    }
-
-    @Override
-    public int statusCode() {
-        Throwable cause = super.getCause();
-        int statusCode = null == cause ? -1 : userDefinedStatusCode(cause.getClass());
-        return -1 == statusCode ? super.statusCode() : statusCode;
     }
 
     public List<String> stackTrace() {
@@ -145,18 +114,9 @@ public class ActErrorResult extends ErrorResult implements ActError {
         if (t instanceof SourceInfo) {
             this.sourceInfo = (SourceInfo)t;
         } else {
-            DevModeClassLoader cl = (DevModeClassLoader) App.instance().classLoader();
-            for (StackTraceElement stackTraceElement : t.getStackTrace()) {
-                int line = stackTraceElement.getLineNumber();
-                if (line <= 0) {
-                    continue;
-                }
-                Source source = cl.source(stackTraceElement.getClassName());
-                if (null == source) {
-                    continue;
-                }
-                sourceInfo = new SourceInfoImpl(source, line);
-            }
+            doFillInStackTrace();
+            Throwable cause = getCause();
+            sourceInfo = Util.loadSourceInfo(null == cause ? getStackTrace() : cause.getStackTrace(), ActErrorResult.class);
         }
     }
 
@@ -176,7 +136,7 @@ public class ActErrorResult extends ErrorResult implements ActError {
         $.Function<Throwable, Result> unsupported = new $.Transformer<Throwable, Result>() {
             @Override
             public Result transform(Throwable throwable) {
-                return ActNotImplemented.create(throwable);
+                return new ActErrorResult(H.Status.NOT_IMPLEMENTED, throwable);
             }
         };
         x.put(UnsupportedException.class, unsupported);
@@ -184,13 +144,13 @@ public class ActErrorResult extends ErrorResult implements ActError {
         x.put(IllegalStateException.class, new $.Transformer<Throwable, Result>() {
             @Override
             public Result transform(Throwable throwable) {
-                return ActConflict.create(throwable);
+                return new ActErrorResult(H.Status.CONFLICT, throwable);
             }
         });
         $.Transformer<Throwable, Result> badRequest = new $.Transformer<Throwable, Result>() {
             @Override
             public Result transform(Throwable throwable) {
-                return ActBadRequest.create(throwable);
+                return new ActErrorResult(H.Status.BAD_REQUEST, throwable);
             }
         };
         x.put(IllegalArgumentException.class, badRequest);
@@ -207,8 +167,8 @@ public class ActErrorResult extends ErrorResult implements ActError {
         if (null == I) {
             ResponseStatus rs = exCls.getAnnotation(ResponseStatus.class);
             if (null == rs) {
-                I = -1;
-                userDefinedStatus.put(exCls, -1);
+                I = H.Status.Code.INTERNAL_SERVER_ERROR;
+                userDefinedStatus.put(exCls, I);
             } else {
                 I = rs.value();
             }
@@ -251,71 +211,24 @@ public class ActErrorResult extends ErrorResult implements ActError {
         return null;
     }
 
-    public static Result ofStatus(int statusCode) {
-        return of(H.Status.of(statusCode));
-    }
-
-    @Deprecated
-    public static Result of(int statusCode) {
-        E.illegalArgumentIf(statusCode < 400);
-        switch (statusCode) {
-            case 400:
-                return ActBadRequest.create();
-            case 401:
-                return ActUnauthorized.create();
-            case 403:
-                return ActForbidden.create();
-            case 404:
-                return ActNotFound.create();
-            case 405:
-                return ActMethodNotAllowed.create();
-            case 409:
-                return ActConflict.create();
-            case 501:
-                return ActNotImplemented.create();
-            default:
-                if (Act.isDev()) {
-                    return new ActErrorResult(new RuntimeException());
-                } else {
-                    return new ErrorResult(H.Status.of(statusCode));
-                }
-        }
-    }
-
     public static ErrorResult of(H.Status status) {
-        E.illegalArgumentIf(!status.isClientError() && !status.isServerError());
-        if (Act.isDev()) {
-            return new ActErrorResult(status);
-        } else {
-            return ErrorResult.of(status);
-        }
+        E.illegalArgumentIf(!status.isError());
+        return Act.isDev() ? new ActErrorResult(status) : new ErrorResult(status);
     }
 
     public static ErrorResult of(H.Status status, String message, Object... args) {
         E.illegalArgumentIf(!status.isClientError() && !status.isServerError());
-        if (Act.isDev()) {
-            return new ActErrorResult(status, message, args);
-        } else {
-            return ErrorResult.of(status, message, args);
-        }
+        return Act.isDev() ? new ActErrorResult(status, message, args) : new ErrorResult(status, message, args);
     }
 
     public static ErrorResult of(H.Status status, int errorCode) {
-        E.illegalArgumentIf(!status.isClientError() && !status.isServerError());
-        if (Act.isDev()) {
-            return new ActErrorResult(status, errorCode);
-        } else {
-            return ErrorResult.of(status, errorCode);
-        }
+        E.illegalArgumentIf(!status.isError());
+        return (Act.isDev() ? new ActErrorResult(status) : new ErrorResult(status)).initErrorCode(errorCode);
     }
 
     public static ErrorResult of(H.Status status, int errorCode, String message, Object... args) {
         E.illegalArgumentIf(!status.isClientError() && !status.isServerError());
-        if (Act.isDev()) {
-            return new ActErrorResult(status, errorCode, message, args);
-        } else {
-            return ErrorResult.of(status, errorCode, message, args);
-        }
+        return (Act.isDev() ? new ActErrorResult(status, message, args) : new ErrorResult(status, message, args)).initErrorCode(errorCode);
     }
 
     public static Throwable rootCauseOf(Throwable t) {
@@ -334,4 +247,22 @@ public class ActErrorResult extends ErrorResult implements ActError {
         return t;
     }
 
+
+    private static String errorMsg(AsmException exception, boolean scanning) {
+        String userMsg = exception.getLocalizedMessage();
+        return (S.blank(userMsg)) ? S.concat("Error ", scanning ? "scanning" : "enhancing", " bytecode at ", exception.context().toString()) : userMsg;
+    }
+
+    public static Result actNotFound() {
+        return Act.isDev() ? of(H.Status.NOT_FOUND) : Controller.NOT_FOUND;
+    }
+
+    public static Result actForbidden() {
+        return Act.isDev() ? of(H.Status.FORBIDDEN) : Controller.FORBIDDEN;
+    }
+
+
+    public static Result actMethodNotAllowed() {
+        return Act.isDev() ? of(H.Status.METHOD_NOT_ALLOWED) : Controller.METHOD_NOT_ALLOWED;
+    }
 }

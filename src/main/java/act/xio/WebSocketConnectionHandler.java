@@ -29,15 +29,16 @@ import act.controller.meta.HandlerParamMetaInfo;
 import act.handler.RequestHandlerBase;
 import act.inject.param.*;
 import act.sys.Env;
+import act.view.ActErrorResult;
 import act.ws.WebSocketConnectionManager;
 import act.ws.WebSocketContext;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.esotericsoftware.reflectasm.MethodAccess;
 import org.osgl.$;
+import org.osgl.http.H;
 import org.osgl.inject.BeanSpec;
 import org.osgl.mvc.annotation.WsAction;
-import org.osgl.mvc.result.BadRequest;
 import org.osgl.util.E;
 import org.osgl.util.S;
 import org.osgl.util.StringValueResolver;
@@ -215,7 +216,7 @@ public abstract class WebSocketConnectionHandler extends RequestHandlerBase {
             } else {
                 App.LOGGER.warn(e, "error parsing JSON data");
             }
-            throw new BadRequest(e.getCause());
+            throw ActErrorResult.of(H.Status.BAD_REQUEST).initCause(e.getCause());
         }
     }
 

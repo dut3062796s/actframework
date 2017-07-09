@@ -27,7 +27,6 @@ import act.controller.ParamNames;
 import act.handler.builtin.controller.FastRequestHandler;
 import org.osgl.$;
 import org.osgl.http.H;
-import org.osgl.mvc.result.NotFound;
 import org.osgl.util.E;
 import org.osgl.util.IO;
 import org.osgl.util.S;
@@ -39,6 +38,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import static act.controller.Controller.Util.notFound;
 import static org.osgl.http.H.Format.*;
 
 /**
@@ -152,7 +152,7 @@ public class StaticResourceGetter extends FastRequestHandler {
                 loadPath = S.pathConcat(base, SEP, path);
                 target = StaticFileGetter.class.getResource(loadPath);
                 if (null == target) {
-                    throw NotFound.get();
+                    throw notFound();
                 }
             }
             if (preventFolderAccess(target, loadPath, context)) {
@@ -184,7 +184,7 @@ public class StaticResourceGetter extends FastRequestHandler {
             }
         } catch (IOException e) {
             App.LOGGER.warn(e, "Error servicing static resource request");
-            throw NotFound.get();
+            throw notFound();
         }
     }
 

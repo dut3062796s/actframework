@@ -25,8 +25,9 @@ import act.app.ActionContext;
 import act.app.App;
 import act.inject.DependencyInjector;
 import act.util.ActContext;
+import act.view.ActErrorResult;
+import org.osgl.http.H;
 import org.osgl.inject.BeanSpec;
-import org.osgl.mvc.result.BadRequest;
 import org.osgl.mvc.util.Binder;
 import org.osgl.util.S;
 import org.osgl.util.StringValueResolver;
@@ -96,7 +97,7 @@ class CollectionLoader implements ParamValueLoader {
                     for (int i = 0; i < nodes.size(); ++i) {
                         ParamTreeNode elementNode = nodes.get(i);
                         if (!elementNode.isLeaf()) {
-                            throw new BadRequest("cannot parse param: expect leaf node, found: \n%s", node.debug());
+                            throw ActErrorResult.of(H.Status.BAD_REQUEST, "cannot parse param: expect leaf node, found: \n%s", node.debug());
                         }
                         context.attribute(ActionContext.ATTR_CURRENT_FILE_INDEX, i);
                         if (null != binder) {
@@ -114,7 +115,7 @@ class CollectionLoader implements ParamValueLoader {
                 try {
                     id = Integer.parseInt(s);
                 } catch (NumberFormatException e) {
-                    throw new BadRequest("cannot parse param: list index is not a number: %s", s);
+                    throw ActErrorResult.of(H.Status.BAD_REQUEST, "cannot parse param: list index is not a number: %s", s);
                 }
                 ParamTreeNode child = node.child(s);
                 if (child.isLeaf()) {

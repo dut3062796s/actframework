@@ -44,7 +44,6 @@ import org.osgl.http.H;
 import org.osgl.logging.LogManager;
 import org.osgl.logging.Logger;
 import org.osgl.mvc.result.ErrorResult;
-import org.osgl.mvc.result.NotFound;
 import org.osgl.mvc.result.Result;
 import org.osgl.util.E;
 import org.osgl.util.S;
@@ -118,8 +117,13 @@ public class NetworkHandler extends DestroyableBase {
         url = contentSuffixProcessor.apply(req, url);
         try {
             url = urlContextProcessor.apply(req, url);
-        } catch (NotFound notFound) {
-            ctx.handler(AlwaysNotFound.INSTANCE);
+        } catch (ErrorResult errorResult) {
+
+            if (errorResult.status().code() == H.Status.Code.NOT_FOUND) {
+                ctx.handler(AlwaysNotFound.INSTANCE);
+            } else {
+
+            }
             ctx.saveLocal();
             AlwaysNotFound.INSTANCE.apply(ctx);
             return;
@@ -163,7 +167,7 @@ public class NetworkHandler extends DestroyableBase {
                     }
 
                     ctx.resp().addHeaderIfNotAdded(H.Header.Names.CONTENT_TYPE, fmt.contentType());
-                    r.apply(req, ctx.resp());
+                    r.apply(ctx);
                 } catch (Exception e) {
                     handleException(e, ctx, "Error handling network request");
                 } finally {
@@ -204,7 +208,7 @@ public class NetworkHandler extends DestroyableBase {
         if (null == ctx.handler()) {
             ctx.handler(FastRequestHandler.DUMB);
         }
-        r.apply(ctx.req(), ctx.resp());
+        r.apply(ctx);
     }
 
     @Override
@@ -236,7 +240,7 @@ public class NetworkHandler extends DestroyableBase {
         @Override
         public String apply(H.Request request, String s) throws NotAppliedException, Osgl.Break {
             if (s.length() < contextLen || !s.startsWith(context)) {
-                throw NotFound.get();
+                throw ActErrorResult.actNotFound();
             }
             return s.substring(contextLen, s.length());
         }

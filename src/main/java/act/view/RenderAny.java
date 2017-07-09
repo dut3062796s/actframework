@@ -23,8 +23,9 @@ package act.view;
 import act.app.ActionContext;
 import org.osgl.http.H;
 import org.osgl.mvc.result.RenderBinary;
-import org.osgl.mvc.result.RenderJSON;
+import org.osgl.mvc.result.RenderContent;
 import org.osgl.mvc.result.Result;
+import org.osgl.mvc.result.RichResult;
 import org.osgl.storage.ISObject;
 import org.osgl.util.C;
 import org.osgl.util.E;
@@ -50,12 +51,6 @@ public class RenderAny extends Result {
         super(H.Status.OK);
     }
 
-    @Override
-    public void apply(H.Request req, H.Response resp) {
-        throw E.unsupport("RenderAny does not support " +
-                "apply to request and response. Please use apply(AppContext) instead");
-    }
-
     // TODO: Allow plugin to support rendering pdf, xls or other binary types
     public void apply(ActionContext context) {
         Boolean hasTemplate = context.hasTemplate();
@@ -76,7 +71,7 @@ public class RenderAny extends Result {
                     methodInfo,
                     req.url()));
         }
-        Result result = null;
+        RichResult result = null;
         if (JSON == fmt) {
             List<String> varNames = context.__appRenderArgNames();
             Map<String, Object> map = new HashMap<>(context.renderArgs());
@@ -85,7 +80,7 @@ public class RenderAny extends Result {
                     map.put(name, context.renderArg(name));
                 }
             }
-            result = new RenderJSON(map);
+            result = RenderContent.renderJson(map);
         } else if (XML == fmt) {
             List<String> varNames = context.__appRenderArgNames();
             Map<String, Object> map = C.newMap();
@@ -110,13 +105,13 @@ public class RenderAny extends Result {
                 String action = S.str(context.actionPath()).afterLast(".").toString();
                 if (firstVar instanceof File) {
                     File file = (File) firstVar;
-                    result = new RenderBinary(file, action);
+                    result = new RenderBinary().source(file).name(action);
                 } else if (firstVar instanceof InputStream) {
                     InputStream is = (InputStream) firstVar;
-                    result = new RenderBinary(is, action);
+                    result = new RenderBinary().source(is).name(action);
                 } else if (firstVar instanceof ISObject) {
                     ISObject sobj = (ISObject) firstVar;
-                    result = new RenderBinary(sobj.asInputStream(), action);
+                    result = new RenderBinary().source(sobj).name(action);
                 }
                 if (null == result) {
                     throw E.unsupport("Unknown render arg type [%s] for binary response", firstVar.getClass());
@@ -126,7 +121,7 @@ public class RenderAny extends Result {
             }
         }
         if (null != result) {
-            result.status(context.successStatus()).apply(context.req(), context.resp());
+            result.overwriteStatus(context.successStatus()).apply(context);
         } else {
             throw E.unexpected("Unknown accept content type: %s", fmt.contentType());
         }

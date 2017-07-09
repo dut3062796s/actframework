@@ -26,8 +26,9 @@ import act.handler.builtin.controller.impl.ReflectedHandlerInvoker;
 import act.security.CORS;
 import act.security.CSRF;
 import act.util.MissingAuthenticationHandler;
-import act.view.ActNotFound;
-import org.osgl.mvc.result.NotFound;
+import act.view.ActErrorResult;
+import org.osgl.http.H;
+import org.osgl.mvc.result.ErrorResult;
 import org.osgl.mvc.result.Result;
 
 /**
@@ -51,11 +52,11 @@ public class ControllerAction extends ActionHandler<ControllerAction> {
         return handlerInvoker.handle(actionContext);
     }
 
-    public NotFound notFoundOnMethod(String message) {
+    public ErrorResult notFoundOnMethod(String message) {
         if (handlerInvoker instanceof ReflectedHandlerInvoker) {
             return ((ReflectedHandlerInvoker) handlerInvoker).notFoundOnMethod(message);
         }
-        return ActNotFound.create();
+        return ActErrorResult.of(H.Status.NOT_FOUND);
     }
 
     @Override

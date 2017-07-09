@@ -21,7 +21,6 @@ package act.util;
  */
 
 import act.app.App;
-import act.data.SObjectResolver;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.ParserConfig;
 import com.alibaba.fastjson.serializer.SerializeConfig;
@@ -36,10 +35,7 @@ import org.osgl.exception.NotAppliedException;
 import org.osgl.mvc.MvcConfig;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.impl.SObject;
-import org.osgl.util.KV;
-import org.osgl.util.KVStore;
-import org.osgl.util.Keyword;
-import org.osgl.util.ValueObject;
+import org.osgl.util.*;
 
 public class JsonUtilConfig {
     public static void configure(App app) {
@@ -81,6 +77,9 @@ public class JsonUtilConfig {
             public String apply(Object o) throws NotAppliedException, Osgl.Break {
                 if (null == o) {
                     return "{}";
+                }
+                if ($.isSimpleType(o.getClass())) {
+                    return apply(C.map("result", o));
                 }
                 Boolean b = DisableFastJsonCircularReferenceDetect.option.get();
                 if (null != b && b) {

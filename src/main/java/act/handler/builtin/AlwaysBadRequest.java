@@ -20,10 +20,14 @@ package act.handler.builtin;
  * #L%
  */
 
+import act.Act;
 import act.app.ActionContext;
 import act.handler.ExpressHandler;
 import act.handler.builtin.controller.FastRequestHandler;
-import org.osgl.mvc.result.BadRequest;
+import act.view.ActErrorResult;
+import org.osgl.http.H;
+
+import static act.controller.Controller.BAD_REQUEST;
 
 public class AlwaysBadRequest extends FastRequestHandler implements ExpressHandler {
 
@@ -31,7 +35,7 @@ public class AlwaysBadRequest extends FastRequestHandler implements ExpressHandl
 
     @Override
     public void handle(ActionContext context) {
-        BadRequest.get().apply(context.req(), context.resp());
+        (Act.isDev() ? ActErrorResult.of(H.Status.BAD_REQUEST) : BAD_REQUEST).apply(context);
     }
 
     @Override

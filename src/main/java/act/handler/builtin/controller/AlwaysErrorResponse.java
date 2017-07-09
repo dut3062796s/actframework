@@ -1,4 +1,4 @@
-package act.handler.builtin;
+package act.handler.builtin.controller;
 
 /*-
  * #%L
@@ -22,20 +22,27 @@ package act.handler.builtin;
 
 import act.app.ActionContext;
 import act.handler.ExpressHandler;
-import act.handler.builtin.controller.FastRequestHandler;
 import act.view.ActErrorResult;
+import org.osgl.http.H;
+import org.osgl.mvc.result.ErrorResult;
+import org.osgl.util.E;
 
-public class AlwaysForbidden extends FastRequestHandler implements ExpressHandler {
+public class AlwaysErrorResponse extends FastRequestHandler implements ExpressHandler {
 
-    public static AlwaysForbidden INSTANCE = new AlwaysForbidden();
+    private final ErrorResult errorResult;
+
+    public AlwaysErrorResponse(H.Status status) {
+        E.illegalArgumentIf(!status.isError(), "Error status required");
+        this.errorResult = ActErrorResult.of(status);
+    }
 
     @Override
     public void handle(ActionContext context) {
-        ActErrorResult.actForbidden().apply(context);
+        errorResult.apply(context);
     }
 
     @Override
     public String toString() {
-        return "error: forbidden";
+        return "error: " + errorResult;
     }
 }

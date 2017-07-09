@@ -23,7 +23,7 @@ package act.handler.builtin;
 import act.app.ActionContext;
 import act.handler.ExpressHandler;
 import act.handler.builtin.controller.FastRequestHandler;
-import org.osgl.mvc.result.MethodNotAllowed;
+import act.view.ActErrorResult;
 
 public class AlwaysMethodNotAllowed extends FastRequestHandler implements ExpressHandler {
 
@@ -31,7 +31,7 @@ public class AlwaysMethodNotAllowed extends FastRequestHandler implements Expres
 
     @Override
     public void handle(ActionContext context) {
-        MethodNotAllowed.get().apply(context.req(), context.resp());
+        ActErrorResult.actMethodNotAllowed().apply(context);
     }
 
     @Override

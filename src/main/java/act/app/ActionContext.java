@@ -61,7 +61,7 @@ import static org.osgl.http.H.Header.Names.*;
  * an application session
  */
 @RequestScoped
-public class ActionContext extends ActContext.Base<ActionContext> implements Destroyable {
+public class ActionContext extends ActContext.Base<ActionContext> implements Destroyable, H.Context {
 
     public static final String ATTR_CSRF_TOKEN = "__csrf__";
     public static final String ATTR_CSR_TOKEN_PREFETCH = "__csrf_prefetch__";

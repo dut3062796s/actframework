@@ -20,10 +20,14 @@ package act.handler.builtin;
  * #L%
  */
 
+import act.Act;
 import act.app.ActionContext;
 import act.handler.ExpressHandler;
 import act.handler.builtin.controller.FastRequestHandler;
-import org.osgl.mvc.result.NotFound;
+import act.view.ActErrorResult;
+import org.osgl.http.H;
+
+import static act.controller.Controller.NOT_FOUND;
 
 public class AlwaysNotFound extends FastRequestHandler implements ExpressHandler {
 
@@ -31,7 +35,7 @@ public class AlwaysNotFound extends FastRequestHandler implements ExpressHandler
 
     @Override
     public void handle(ActionContext context) {
-        NotFound.get().apply(context.req(), context.resp());
+        (Act.isDev() ? ActErrorResult.of(H.Status.NOT_FOUND) : NOT_FOUND).apply(context);
     }
 
     @Override

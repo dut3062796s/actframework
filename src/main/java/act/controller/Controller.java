@@ -51,6 +51,7 @@ import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.Map;
 
+import static com.alibaba.fastjson.JSON.toJSONString;
 import static org.osgl.http.H.Format.*;
 import static org.osgl.mvc.result.Redirect.F.*;
 
@@ -64,6 +65,67 @@ import static org.osgl.mvc.result.Redirect.F.*;
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 public @interface Controller {
+
+
+    /**
+     * Singleton instance for an empty {@link H.Status#OK} result
+     */
+    Result OK = Result.OK;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#CREATED} result
+     */
+    Result CREATED = Result.CREATED;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#CREATED} result
+     */
+    Result ACCEPTED = Result.ACCEPTED;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#NO_CONTENT} result
+     */
+    Result NO_CONTENT = Result.NO_CONTENT;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#NOT_MODIFIED} result
+     */
+    Result NOT_MODIFIED = Result.NOT_MODIFIED;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#BAD_REQUEST} result
+     */
+    Result BAD_REQUEST = Result.BAD_REQUEST;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#UNAUTHORIZED} result
+     */
+    Result UNAUTHORIZED = Result.UNAUTHORIZED;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#FORBIDDEN} result
+     */
+    Result FORBIDDEN = Result.FORBIDDEN;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#NOT_FOUND} result
+     */
+    Result NOT_FOUND = Result.NOT_FOUND;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#METHOD_NOT_ALLOWED} result
+     */
+    Result METHOD_NOT_ALLOWED = Result.METHOD_NOT_ALLOWED;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#CONFLICT} result
+     */
+    Result CONFLICT = Result.CONFLICT;
+
+    /**
+     * Singleton instance for an empty {@link H.Status#NOT_IMPLEMENTED} result
+     */
+    Result NOT_IMPLEMENTED = Result.NOT_IMPLEMENTED;
 
     /**
      * Indicate the context path for all action methods declared
@@ -89,80 +151,58 @@ public @interface Controller {
      */
     class Util {
 
-        public static final Ok OK = Ok.get();
-        public static final Created CREATED = Created.INSTANCE;
-        public static final Result CREATED_JSON = new Result(H.Status.CREATED, "{\"message\": \"Created\"}") {};
-        public static final Result CREATED_XML = new Result(H.Status.CREATED, "<?xml version=\"1.0\" ?><message>Created</message>") {};
-        public static final Result OK_JSON = new Result(H.Status.OK, "{\"message\": \"Okay\"}") {};
-        public static final Result OK_XML = new Result(H.Status.OK, "<?xml version=\"1.0\" ?><message>Okay</message>") {};
-        public static final NoContent NO_CONTENT = NoContent.get();
-
         /**
-         * Returns an {@link Ok} result
+         * Returns an empty {@link H.Status#OK} result
          */
         public static Result ok() {
-            H.Format accept = ActionContext.current().accept();
-            if (H.Format.JSON == accept) {
-                return OK_JSON;
-            } else if (H.Format.XML == accept) {
-                return OK_XML;
-            }
             return OK;
         }
 
         /**
-         * Returns a {@link Created} result
+         * Returns a {@link H.Status#CREATED} result
          *
          * @param resourceGetUrl the URL to access the new resource been created
          * @return the result as described
          */
-        public static Created created(String resourceGetUrl) {
-            return Created.withLocation(resourceGetUrl);
+        public static Result created(String resourceGetUrl) {
+            return Result.created(resourceGetUrl);
         }
 
         /**
-         * Return a {@link Created} result
+         * Return a {@link H.Status#CREATED} result
          * @return the result as described
          */
-        public static Created created() {
-            return Created.INSTANCE;
-        }
-
-        public static NotModified notModified() {
-            return NotModified.get();
-        }
-
-        public static NotModified notModified(String etag, Object... args) {
-            return NotModified.of(etag, args);
+        public static Result created() {
+            return CREATED;
         }
 
         /**
-         * Returns a {@link Accepted} result
-         *
-         * @param statusMonitorUrl the URL to check the request process status
+         * Return a {@link H.Status#NOT_MODIFIED} result
          * @return the result as described
          */
-        public static Result accepted(String statusMonitorUrl) {
-            return new Accepted(statusMonitorUrl);
-        }
-
-        public static Result notAcceptable() {
-            return NotAcceptable.get();
-        }
-
-        public static Result notAcceptable(String msg, Object... args) {
-            return NotAcceptable.of(msg, args);
+        public static Result notModified() {
+            return NOT_MODIFIED;
         }
 
         /**
-         * Returns an {@link NotFound} result
+         * Create an new {@link H.Status#NOT_MODIFIED} result with etag specified
+         * @param etag the etag string template
+         * @param args the etag string arguments
+         * @return the result as described
+         */
+        public static Result notModified(String etag, Object... args) {
+            return Result.notModified().etag(S.fmt(etag, args));
+        }
+
+        /**
+         * Returns an {@link H.Status#NOT_FOUND} result
          */
         public static Result notFound() {
-            return ActNotFound.create();
+            return Act.isDev() ? ActErrorResult.of(H.Status.NOT_FOUND) : NOT_FOUND;
         }
 
         /**
-         * Returns an {@link NotFound} result with custom message
+         * Returns an {@link H.Status#NOT_FOUND} result with custom message
          * template and arguments. The final message is rendered with
          * the template and arguments using {@link String#format(String, Object...)}
          *
@@ -170,24 +210,24 @@ public @interface Controller {
          * @param args the message argument
          */
         public static Result notFound(String msg, Object... args) {
-            return ActNotFound.create(msg, args);
+            return ActErrorResult.of(H.Status.NOT_FOUND, msg, args);
         }
 
         /**
-         * Throws out an {@link NotFound} result if the object specified is
+         * Throws out an {@link H.Status#NOT_FOUND} result if the object specified is
          * {@code null}
          *
          * @param o the object to be evaluated
          */
         public static <T> T notFoundIfNull(T o) {
             if (null == o) {
-                throw ActNotFound.create();
+                throw notFound();
             }
             return o;
         }
 
         /**
-         * Throws out an {@link NotFound} result with custom message template and
+         * Throws out an {@link H.Status#NOT_FOUND} result with custom message template and
          * arguments if the object specified is {@code null}. The final message is
          * rendered with the template and arguments using
          * {@link String#format(String, Object...)}
@@ -198,13 +238,13 @@ public @interface Controller {
          */
         public static <T> T notFoundIfNull(T o, String msg, Object... args) {
             if (null == o) {
-                throw ActNotFound.create(msg, args);
+                throw notFound(msg, args);
             }
             return o;
         }
 
         /**
-         * Throws out an {@link NotFound} result if the boolean expression specified
+         * Throws out an {@link H.Status#NOT_FOUND} result if the boolean expression specified
          * is {@code true}
          * {@code null}
          *
@@ -212,12 +252,12 @@ public @interface Controller {
          */
         public static void notFoundIf(boolean test) {
             if (test) {
-                throw ActNotFound.create();
+                throw notFound();
             }
         }
 
         /**
-         * Throws out an {@link NotFound} result with custom message template and
+         * Throws out an {@link H.Status#NOT_FOUND} result with custom message template and
          * arguments if the expression specified is {@code true}. The final message is
          * rendered with the template and arguments using
          * {@link String#format(String, Object...)}
@@ -228,12 +268,12 @@ public @interface Controller {
          */
         public static void notFoundIf(boolean test, String msg, Object... args) {
             if (test) {
-                throw ActNotFound.create(msg, args);
+                throw notFound(msg, args);
             }
         }
 
         /**
-         * Throws out an {@link NotFound} result if the boolean expression specified
+         * Throws out an {@link H.Status#NOT_FOUND} result if the boolean expression specified
          * is {@code false}
          * {@code null}
          *
@@ -244,7 +284,7 @@ public @interface Controller {
         }
 
         /**
-         * Throws out an {@link NotFound} result with custom message template and
+         * Throws out an {@link H.Status#NOT_FOUND} result with custom message template and
          * arguments if the expression specified is {@code false}. The final message is
          * rendered with the template and arguments using
          * {@link String#format(String, Object...)}
@@ -257,77 +297,140 @@ public @interface Controller {
             notFoundIf(!test, msg, args);
         }
 
-        public static BadRequest badRequest() {
-            return ActBadRequest.create();
+        /**
+         * Returns an {@link H.Status#BAD_REQUEST} result
+         */
+        public static Result badRequest() {
+            return Act.isDev() ? ActErrorResult.of(H.Status.BAD_REQUEST) : BAD_REQUEST;
         }
 
-        public static BadRequest badRequest(String msg, Object... args) {
-            return ActBadRequest.create(msg, args);
+        /**
+         * Returns an {@link H.Status#BAD_REQUEST} result with custom message
+         * template and arguments. The final message is rendered with
+         * the template and arguments using {@link String#format(String, Object...)}
+         *
+         * @param msg  the message template
+         * @param args the message argument
+         */
+        public static Result badRequest(String msg, Object... args) {
+            return ActErrorResult.of(H.Status.BAD_REQUEST, msg, args);
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result if the boolean expression specified
+         * is {@code true}
+         *
+         * @param test the boolean expression to be evaluated
+         */
         public static void badRequestIf(boolean test) {
             if (test) {
-                throw ActBadRequest.create();
+                throw badRequest();
             }
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result with custom message template and
+         * arguments if the expression specified is {@code true}. The final message is
+         * rendered with the template and arguments using
+         * {@link String#format(String, Object...)}
+         *
+         * @param test the boolean expression
+         * @param msg  the message template
+         * @param args the message argument
+         */
         public static void badRequestIf(boolean test, String msg, Object... args) {
             if (test) {
-                throw ActBadRequest.create(msg, args);
+                throw badRequest(msg, args);
             }
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result if the specified string is blank
+         *
+         * @param test the string to be evaluated
+         */
         public static void badRequestIfBlank(String test) {
-            if (S.blank(test)) {
-                throw ActBadRequest.create();
-            }
+            badRequestIf(S.blank(test));
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result with custom message template and
+         * arguments if the specified string is blank. The final message is
+         * rendered with the template and arguments using
+         * {@link String#format(String, Object...)}
+         *
+         * @param test the string to be checked
+         * @param msg  the message template
+         * @param args the message argument
+         */
         public static void badRequestIfBlank(String test, String msg, Object... args) {
-            if (S.blank(test)) {
-                throw ActBadRequest.create(msg, args);
-            }
+            badRequestIf(S.blank(test), msg, args);
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result if the specified object is `null`
+         *
+         * @param test the object to be evaluated
+         */
         public static void badRequestIfNull(Object test) {
-            if (null == test) {
-                throw ActBadRequest.create();
-            }
+            badRequestIf(null == test);
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result with custom message template and
+         * arguments if the specified object is `null`. The final message is
+         * rendered with the template and arguments using
+         * {@link String#format(String, Object...)}
+         *
+         * @param test the object to be checked
+         * @param msg  the message template
+         * @param args the message argument
+         */
         public static void badRequestIfNull(Object test, String msg, Object... args) {
-            if (null == test) {
-                throw ActBadRequest.create(msg, args);
-            }
+            badRequestIf(null == test, msg, args);
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result if the boolean expression specified
+         * is {@code false}
+         *
+         * @param test the boolean expression to be evaluated
+         */
         public static void badRequestIfNot(boolean test) {
-            if (!test) {
-                throw ActBadRequest.create();
-            }
+            badRequestIf(!test);
         }
 
+        /**
+         * Throws out an {@link H.Status#BAD_REQUEST} result with custom message template and
+         * arguments if the expression specified is {@code false}. The final message is
+         * rendered with the template and arguments using
+         * {@link String#format(String, Object...)}
+         *
+         * @param test the boolean expression
+         * @param msg  the message template
+         * @param args the message argument
+         */
         public static void badRequestIfNot(boolean test, String msg, Object... args) {
             badRequestIf(!test, msg, args);
         }
 
-        public static Conflict conflict() {
-            return ActConflict.create();
+        public static Result conflict() {
+            return Act.isDev() ? CONFLICT : ActErrorResult.of(H.Status.CONFLICT);
         }
 
-        public static Conflict conflict(String message, Object... args) {
-            return ActConflict.create(message, args);
+        public static Result conflict(String message, Object... args) {
+            return ActErrorResult.of(H.Status.CONFLICT, message, args);
         }
 
         public static void conflictIf(boolean test) {
             if (test) {
-                throw ActConflict.create();
+                throw conflict();
             }
         }
 
         public static void conflictIf(boolean test, String message, Object... args) {
             if (test) {
-                throw ActConflict.create(message, args);
+                throw conflict(message, args);
             }
         }
 
@@ -339,8 +442,8 @@ public @interface Controller {
             conflictIf(!test, message, args);
         }
 
-        public static Unauthorized unauthorized() {
-            return ActUnauthorized.create();
+        public static Result unauthorized() {
+            return Act.isDev() ? ActErrorResult.of(H.Status.UNAUTHORIZED) : UNAUTHORIZED;
         }
 
         public static Unauthorized unauthorized(String realm) {
@@ -349,13 +452,13 @@ public @interface Controller {
 
         public static void unauthorizedIf(boolean test) {
             if (test) {
-                throw ActUnauthorized.create();
+                throw unauthorized();
             }
         }
 
         public static void unauthorizedIf(boolean test, String realm) {
             if (test) {
-                throw ActUnauthorized.create(realm);
+                throw unauthorized(realm);
             }
         }
 
@@ -368,37 +471,37 @@ public @interface Controller {
         }
 
         /**
-         * Returns a {@link Forbidden} result
+         * Returns a {@link H.Status#FORBIDDEN} result
          */
-        public static Forbidden forbidden() {
-            return ActForbidden.create();
+        public static Result forbidden() {
+            return Act.isDev() ? ActErrorResult.of(H.Status.FORBIDDEN) : FORBIDDEN;
         }
 
         /**
-         * Returns a {@link Forbidden} result with custom message
+         * Returns a {@link H.Status#FORBIDDEN} result with custom message
          * template and arguments. The final message is rendered with
          * the template and arguments using {@link String#format(String, Object...)}
          *
          * @param msg  the message template
          * @param args the message argument
          */
-        public static Forbidden forbidden(String msg, Object... args) {
-            return ActForbidden.create(msg, args);
+        public static Result forbidden(String msg, Object... args) {
+            return ActErrorResult.of(H.Status.FORBIDDEN, msg, args);
         }
 
         /**
-         * Throws a {@link Forbidden} result if the test condition is {@code true}
+         * Throws a {@link H.Status#FORBIDDEN} result if the test condition is {@code true}
          *
          * @param test the test condition
          */
         public static void forbiddenIf(boolean test) {
             if (test) {
-                throw ActForbidden.create();
+                throw forbidden();
             }
         }
 
         /**
-         * Throws a {@link Forbidden} result if the test condition is {@code false}
+         * Throws a {@link H.Status#FORBIDDEN} result if the test condition is {@code false}
          *
          * @param test the test condition
          */
@@ -407,7 +510,7 @@ public @interface Controller {
         }
 
         /**
-         * Throws a {@link Forbidden} result if test condition is {@code true}
+         * Throws a {@link H.Status#FORBIDDEN} result if test condition is {@code true}
          *
          * @param test the test condition
          * @param msg  the message format template
@@ -415,12 +518,12 @@ public @interface Controller {
          */
         public static void forbiddenIf(boolean test, String msg, Object... args) {
             if (test) {
-                throw ActForbidden.create(msg, args);
+                throw forbidden(msg, args);
             }
         }
 
         /**
-         * Throws a {@link Forbidden} result if the test condition is {@code false}
+         * Throws a {@link H.Status#FORBIDDEN} result if the test condition is {@code false}
          *
          * @param test the test condition
          * @param msg  the message format template
@@ -448,7 +551,7 @@ public @interface Controller {
             return url;
         }
 
-        private static <T extends RedirectBase> T _redirect($.Function<String, T> func, String url, Object... args) {
+        private static <T extends Redirect> T _redirect($.Function<String, T> func, String url, Object... args) {
             url = processUrl(S.fmt(url, args));
             return func.apply(url);
         }
@@ -459,39 +562,91 @@ public @interface Controller {
             return func.apply(url);
         }
 
+        /**
+         * This method is deprecated. Please use {@link #loginRedirect(String, Object...)} instead
+         */
+        @Deprecated
         public static Redirect redirect(String url, Object... args) {
-            return _redirect(REDIRECT, url, args);
+            return _redirect(LOGIN_REDIRECT, url, args);
         }
 
+        /**
+         * This method is deprecated. Please use {@link #loginRedirect(String, Map)} instead
+         */
+        @Deprecated
         public static Redirect redirect(String url, Map reverseRoutingArguments) {
-            return _redirect(REDIRECT, url, reverseRoutingArguments);
+            return _redirect(LOGIN_REDIRECT, url, reverseRoutingArguments);
         }
 
+        /**
+         * This method is deprecated. Please use {@link #loginRedirectIf(boolean, String, Object...)} instead
+         */
+        @Deprecated
         public static void redirectIf(boolean test, String url, Object... args) {
             if (test) {
                 throw redirect(url, args);
             }
         }
 
+        /**
+         * This method is deprecated. Please use {@link #loginRedirectIfNot(boolean, String, Object...)} instead
+         */
+        @Deprecated
         public static void redirectIfNot(boolean test, String url, Object... args) {
             redirectIf(!test, url, args);
         }
 
+        /**
+         * This method is deprecated. Please use {@link #loginRedirectIf(boolean, String, Map)} instead
+         */
+        @Deprecated
         public static void redirectIf(boolean test, String url, Map reverseRoutingArguments) {
             if (test) {
                 throw redirect(url, reverseRoutingArguments);
             }
         }
 
+        /**
+         * This method is deprecated. Please use {@link #loginRedirectIfNot(boolean, String, Map)} instead
+         */
+        @Deprecated
         public static void redirectIfNot(boolean test, String url, Map reverseRoutingArguments) {
             redirectIf(!test, url, reverseRoutingArguments);
         }
 
-        public static MovedPermanently movedPermanently(String url, Object... args) {
+        public static Redirect loginRedirect(String url, Object... args) {
+            return _redirect(LOGIN_REDIRECT, url, args);
+        }
+
+        public static Redirect loginRedirect(String url, Map reverseRoutingArguments) {
+            return _redirect(LOGIN_REDIRECT, url, reverseRoutingArguments);
+        }
+
+        public static void loginRedirectIf(boolean test, String url, Object... args) {
+            if (test) {
+                throw redirect(url, args);
+            }
+        }
+
+        public static void loginRedirectIfNot(boolean test, String url, Object... args) {
+            redirectIf(!test, url, args);
+        }
+
+        public static void loginRedirectIf(boolean test, String url, Map reverseRoutingArguments) {
+            if (test) {
+                throw redirect(url, reverseRoutingArguments);
+            }
+        }
+
+        public static void loginRedirectIfNot(boolean test, String url, Map reverseRoutingArguments) {
+            redirectIf(!test, url, reverseRoutingArguments);
+        }
+
+        public static Redirect movedPermanently(String url, Object... args) {
             return _redirect(MOVED_PERMANENTLY, url, args);
         }
 
-        public static MovedPermanently movedPermanently(String url, Map reverseRoutingArguments) {
+        public static Redirect movedPermanently(String url, Map reverseRoutingArguments) {
             return _redirect(MOVED_PERMANENTLY, url, reverseRoutingArguments);
         }
 
@@ -515,11 +670,11 @@ public @interface Controller {
             movedPermanentlyIf(!test, url, reverseRoutingArguments);
         }
 
-        public static Found found(String url, Object... args) {
+        public static Redirect found(String url, Object... args) {
             return _redirect(FOUND, url, args);
         }
 
-        public static Found found(String url, Map reverseRoutingArguments) {
+        public static Redirect found(String url, Map reverseRoutingArguments) {
             return _redirect(FOUND, url, reverseRoutingArguments);
         }
 
@@ -543,11 +698,11 @@ public @interface Controller {
             foundIf(!test, url, reverseRoutingArguments);
         }
 
-        public static SeeOther seeOther(String url, Object... args) {
+        public static Redirect seeOther(String url, Object... args) {
             return _redirect(SEE_OTHER, url, args);
         }
 
-        public static SeeOther seeOther(String url, Map reverseRoutingArguments) {
+        public static Redirect seeOther(String url, Map reverseRoutingArguments) {
             return _redirect(SEE_OTHER, url, reverseRoutingArguments);
         }
 
@@ -571,17 +726,17 @@ public @interface Controller {
             seeOtherIf(!test, url, reverseRoutingArguments);
         }
 
-        public static TemporaryRedirect temporaryRedirect(String url, Object... args) {
+        public static Redirect temporaryRedirect(String url, Object... args) {
             return _redirect(TEMPORARY_REDIRECT, url, args);
         }
 
-        public static TemporaryRedirect temporaryRedirect(String url, Map reverseRoutingArguments) {
+        public static Redirect temporaryRedirect(String url, Map reverseRoutingArguments) {
             return _redirect(TEMPORARY_REDIRECT, url, reverseRoutingArguments);
         }
 
         public static void temporaryRedirectIf(boolean test, String url, Object... args) {
             if (test) {
-                throw found(url, args);
+                throw temporaryRedirect(url, args);
             }
         }
 
@@ -599,16 +754,62 @@ public @interface Controller {
             temporaryRedirectIf(!test, url, reverseRoutingArguments);
         }
 
+        public static Redirect permanentRedirect(String url, Object... args) {
+            return _redirect(PERMANENT_REDIRECT, url, args);
+        }
+
+        public static Redirect permanentRedirect(String url, Map reverseRoutingArguments) {
+            return _redirect(PERMANENT_REDIRECT, url, reverseRoutingArguments);
+        }
+
+        public static void permanentRedirectIf(boolean test, String url, Object... args) {
+            if (test) {
+                throw permanentRedirect(url, args);
+            }
+        }
+
+        public static void permanentRedirectIfNot(boolean test, String url, Object... args) {
+            permanentRedirectIf(!test, url, args);
+        }
+
+        public static void permanentRedirectIf(boolean test, String url, Map reverseRoutingArguments) {
+            if (test) {
+                throw permanentRedirect(url, reverseRoutingArguments);
+            }
+        }
+
+        public static void permanentRedirectIfNot(boolean test, String url, Map reverseRoutingArguments) {
+            permanentRedirectIf(!test, url, reverseRoutingArguments);
+        }
+
+        public static ErrorResult paymentRequired(String msg, Object... args) {
+            return ActErrorResult.of(H.Status.PAYMENT_REQUIRED, msg, args);
+        }
+
+        public static void paymentRequiredIf(boolean test, String msg, Object... args) {
+            if (test) {
+                throw paymentRequired(msg, args);
+            }
+        }
+
+        public static void paymentRequiredIfNot(boolean test, String msg, Object... args) {
+            paymentRequiredIf(!test, msg, args);
+        }
+
+        public static void paymentRequiredIfNot(boolean test, String msg, Map reverseRoutingArguments) {
+            paymentRequiredIf(!test, msg, reverseRoutingArguments);
+        }
+
         /**
-         * Returns a {@link RenderText} result with specified message template
+         * Returns a {@link RenderContent} result with specified message template
          * and args. The final message is rendered with the template and arguments using
          * {@link String#format(String, Object...)}
          *
          * @param msg  the message format template
          * @param args the message format arguments
          */
-        public static RenderText text(String msg, Object... args) {
-            return RenderText.of(successStatus(), msg, args);
+        public static RenderContent text(String msg, Object... args) {
+            return RenderContent.renderText(S.fmt(msg, args));
         }
 
         /**
@@ -617,12 +818,12 @@ public @interface Controller {
          * @param args the message format arguments
          * @return the result
          */
-        public static RenderText renderText(String msg, Object... args) {
+        public static RenderContent renderText(String msg, Object... args) {
             return text(msg, args);
         }
 
         /**
-         * Returns a {@link RenderText} result with specified message template
+         * Returns a {@link RenderContent} result with specified message template
          * and args. The final message is rendered with the template and arguments using
          * {@link String#format(String, Object...)}
          *
@@ -630,8 +831,8 @@ public @interface Controller {
          * @param args the message format arguments
          * @return the result
          */
-        public static RenderHtml html(String msg, Object... args) {
-            return RenderHtml.of(successStatus(), msg, args);
+        public static RenderContent html(String msg, Object... args) {
+            return RenderContent.renderHtml(S.fmt(msg, args));
         }
 
         /**
@@ -640,12 +841,12 @@ public @interface Controller {
          * @param args the message format arguments
          * @return the result
          */
-        public static RenderHtml renderHtml(String msg, Object args) {
+        public static RenderContent renderHtml(String msg, Object args) {
             return html(msg, args);
         }
 
         /**
-         * Returns a {@link RenderJSON} result with specified message template
+         * Returns a {@link RenderContent} result with specified message template
          * and args. The final message is rendered with the template and arguments using
          * {@link String#format(String, Object...)}
          *
@@ -653,8 +854,8 @@ public @interface Controller {
          * @param args the message format arguments
          * @return the result
          */
-        public static RenderJSON json(String msg, Object... args) {
-            return RenderJSON.of(successStatus(), msg, args);
+        public static RenderContent json(String msg, Object... args) {
+            return RenderContent.renderJson(S.fmt(msg, args));
         }
 
         /**
@@ -663,19 +864,19 @@ public @interface Controller {
          * @param args the message format arguments
          * @return the result
          */
-        public static RenderJSON renderJson(String msg, Object... args) {
+        public static RenderContent renderJson(String msg, Object... args) {
             return json(msg, args);
         }
 
         /**
-         * Returns a {@link RenderJSON} result with any object. This method will
+         * Returns a {@link RenderContent} result with any object. This method will
          * call underline JSON serializer to transform the object into a JSON string
          *
          * @param data the data to be rendered as JSON string
          * @return the result
          */
-        public static RenderJSON json(Object data) {
-            return RenderJSON.of(successStatus(), data);
+        public static RenderContent json(Object data) {
+            return RenderContent.renderJson(toJSONString(data));
         }
 
         /**
@@ -683,7 +884,7 @@ public @interface Controller {
          * @param data the data to be rendered as JSON string
          * @return the result
          */
-        public static RenderJSON renderJson(Object data) {
+        public static RenderContent renderJson(Object data) {
             return json(data);
         }
 
@@ -710,7 +911,7 @@ public @interface Controller {
 
 
         /**
-         * Returns a {@link RenderXML} result with specified message template
+         * Returns a {@link RenderContent} result with specified message template
          * and args. The final message is rendered with the template and arguments using
          * {@link String#format(String, Object...)}
          *
@@ -718,8 +919,8 @@ public @interface Controller {
          * @param args the message format arguments
          * @return the result
          */
-        public static RenderXML xml(String msg, Object... args) {
-            return RenderXML.of(successStatus(), msg, args);
+        public static RenderContent xml(String msg, Object... args) {
+            return RenderContent.renderXml(S.fmt(msg, args));
         }
 
         /**
@@ -728,7 +929,7 @@ public @interface Controller {
          * @param args the message format arguments
          * @return the result
          */
-        public static RenderXML renderXml(String msg, Object... args) {
+        public static RenderContent renderXml(String msg, Object... args) {
             return xml(msg, args);
         }
 
@@ -740,7 +941,7 @@ public @interface Controller {
          * @return the result
          */
         public static RenderBinary binary(ISObject sobj) {
-            return new RenderBinary(sobj.asInputStream(), sobj.getAttribute(ISObject.ATTR_FILE_NAME), sobj.getAttribute(ISObject.ATTR_CONTENT_TYPE), true);
+            return new RenderBinary().source(sobj);
         }
 
         /**
@@ -759,7 +960,7 @@ public @interface Controller {
          * @param sobj the {@link ISObject} instance
          */
         public static RenderBinary download(ISObject sobj) {
-            return new RenderBinary(sobj.asInputStream(), sobj.getAttribute(ISObject.ATTR_FILE_NAME), sobj.getAttribute(ISObject.ATTR_CONTENT_TYPE), false);
+            return new RenderBinary().source(sobj).asAttachment();
         }
 
         /**
@@ -770,7 +971,7 @@ public @interface Controller {
          * @return a result
          */
         public static RenderBinary binary(File file) {
-            return new RenderBinary(file);
+            return new RenderBinary().source(file);
         }
 
         /**
@@ -790,7 +991,7 @@ public @interface Controller {
          * @return the result
          */
         public static RenderBinary binary($.Function<OutputStream, ?> outputStreamWriter) {
-            return new RenderBinary(outputStreamWriter);
+            return new RenderBinary().source(outputStreamWriter);
         }
 
         /**
@@ -809,7 +1010,7 @@ public @interface Controller {
          * @param file the file to be rendered
          */
         public static RenderBinary download(File file) {
-            return new RenderBinary(file, file.getName(), false);
+            return new RenderBinary().source(file).asAttachment();
         }
 
         /**
@@ -930,17 +1131,18 @@ public @interface Controller {
         public static Result inferPrimitiveResult(Object v, ActionContext actionContext, boolean requireJSON, boolean requireXML, boolean isArray) {
             H.Status status = actionContext.successStatus();
             if (requireJSON) {
-                return RenderJSON.of(status, C.map("result", v));
+                return RenderContent.renderJson(C.map("result", v)).overwriteStatus(status);
             } else if (requireXML) {
-                return RenderXML.of(status, S.concat("<result>", S.string(v), "</result>"));
+                return RenderContent.renderXml(S.concat("<result>", S.string(v), "</result>")).overwriteStatus(status);
             } else {
                 H.Format fmt = actionContext.accept();
                 if (HTML == fmt || H.Format.UNKNOWN == fmt) {
                     String s = isArray ? $.toString2(v) : v.toString();
-                    return RenderHtml.of(status, s);
+                    return RenderContent.renderHtml(s).overwriteStatus(status);
                 }
                 if (TXT == fmt || CSV == fmt) {
-                    return RenderText.of(status, fmt, status.toString());
+                    String s = isArray ? $.toString2(v) : v.toString();
+                    return RenderContent.renderText(s).overwriteStatus(status).contentType(fmt);
                 }
                 throw E.unexpected("Cannot apply text result to format: %s", fmt);
             }
@@ -948,7 +1150,7 @@ public @interface Controller {
 
         public static Result inferResult(Map<String, Object> map, ActionContext actionContext) {
             if (actionContext.acceptJson()) {
-                return RenderJSON.of(actionContext.successStatus(), map);
+                return RenderContent.renderJson(map).overwriteStatus(actionContext.successStatus());
             }
             return RenderTemplate.of(actionContext.successStatus(), map);
         }
@@ -960,31 +1162,36 @@ public @interface Controller {
          */
         public static Result inferResult(Object[] array, ActionContext actionContext) {
             if (actionContext.acceptJson()) {
-                return RenderJSON.of(actionContext.successStatus(), array);
+                return RenderContent.renderJson(array).overwriteStatus(actionContext.successStatus());
             }
             throw E.tbd("render template with render args in array");
         }
 
         /**
          * Infer {@link Result} from an {@link InputStream}. If the current context is in
-         * {@code JSON} format then it will render a {@link RenderJSON JSON} result from the content of the
+         * {@code JSON} format then it will render a {@link RenderContent#renderJson(Object)} JSON} result from the content of the
          * input stream. Otherwise, it will render a {@link RenderBinary binary} result from the inputstream
          *
          * @param is            the inputstream
          * @param actionContext
          * @return a Result inferred from the inputstream specified
          */
-        public static Result inferResult(InputStream is, ActionContext actionContext) {
+        public static Result inferResult(final InputStream is, ActionContext actionContext) {
             if (actionContext.acceptJson()) {
-                return RenderJSON.of(actionContext.successStatus(), IO.readContentAsString(is));
+                return RenderContent.renderJson(IO.readContentAsString(is)).overwriteStatus(actionContext.successStatus());
             } else {
-                return new RenderBinary(is, null, true).status(actionContext.successStatus());
+                return new RenderBinary().source(new Osgl.Visitor<OutputStream>() {
+                    @Override
+                    public void visit(OutputStream outputStream) throws Osgl.Break {
+                        IO.copy(is, outputStream, true);
+                    }
+                }).overwriteStatus(actionContext.successStatus());
             }
         }
 
         /**
          * Infer {@link Result} from an {@link File}. If the current context is in
-         * {@code JSON} format then it will render a {@link RenderJSON JSON} result from the content of the
+         * {@code JSON} format then it will render a {@link RenderContent#renderJson(Object)}  JSON} result from the content of the
          * file. Otherwise, it will render a {@link RenderBinary binary} result from the file specified
          *
          * @param file          the file
@@ -993,17 +1200,17 @@ public @interface Controller {
          */
         public static Result inferResult(File file, ActionContext actionContext) {
             if (actionContext.acceptJson()) {
-                return RenderJSON.of(actionContext.successStatus(), IO.readContentAsString(file));
+                return RenderContent.renderJson(IO.readContentAsString(file)).overwriteStatus(actionContext.successStatus());
             } else {
-                return new RenderBinary(file).status(actionContext.successStatus());
+                return new RenderBinary().source(file).overwriteStatus(actionContext.successStatus());
             }
         }
 
         public static Result inferResult(ISObject sobj, ActionContext context) {
             if (context.acceptJson()) {
-                return RenderJSON.of(context.successStatus(), sobj.asString());
+                return RenderContent.renderJson(sobj.asString()).overwriteStatus(context.successStatus());
             } else {
-                return binary(sobj).status(context.successStatus());
+                return binary(sobj).overwriteStatus(context.successStatus());
             }
         }
 
@@ -1062,7 +1269,7 @@ public @interface Controller {
             } else if (v instanceof ISObject) {
                 return inferResult((ISObject) v, context);
             } else if (v instanceof Map) {
-                return RenderJSON.of(status, v);
+                return RenderContent.renderJson(v).overwriteStatus(status);
             } else {
                 if (requireJSON) {
                     // patch https://github.com/alibaba/fastjson/issues/478
@@ -1075,7 +1282,7 @@ public @interface Controller {
                     PropertySpec.MetaInfo propertySpec = PropertySpec.MetaInfo.withCurrent(meta, context);
                     try {
                         if (null == propertySpec) {
-                            return RenderJSON.of(status, v);
+                            return RenderContent.renderJson(v).overwriteStatus(status);
                         }
                         return FilteredRenderJSON.get(status, v, propertySpec, context);
                     } finally {
@@ -1103,7 +1310,7 @@ public @interface Controller {
             String version = ((Versioned) v)._version();
             String etagVersion = etag(meta, version);
             if (req.etagMatches(etagVersion)) {
-                throw NotModified.get();
+                throw NOT_MODIFIED;
             } else {
                 context.resp().etag(etagVersion);
             }

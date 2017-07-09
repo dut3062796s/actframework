@@ -39,13 +39,14 @@ import act.util.MissingAuthenticationHandler;
 import act.view.ActErrorResult;
 import act.view.RenderAny;
 import act.xio.WebSocketConnectionHandler;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.osgl.$;
 import org.osgl.cache.CacheService;
 import org.osgl.exception.UnexpectedException;
 import org.osgl.http.H;
 import org.osgl.logging.L;
 import org.osgl.logging.Logger;
-import org.osgl.mvc.result.NotFound;
+import org.osgl.mvc.result.ErrorResult;
 import org.osgl.mvc.result.Result;
 import org.osgl.util.C;
 import org.osgl.util.E;
@@ -160,7 +161,7 @@ public final class RequestHandlerProxy extends RequestHandlerBase {
         return actionMethodName;
     }
 
-    public NotFound notFoundOnMethod(String message) {
+    public ErrorResult notFoundOnMethod(String message) {
         return actionHandler.notFoundOnMethod(message);
     }
 

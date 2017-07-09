@@ -31,11 +31,13 @@ import act.inject.param.ParamValueLoaderService;
 import act.util.ActContext;
 import org.osgl.$;
 import org.osgl.inject.ValueLoader;
-import org.osgl.mvc.result.NotFound;
+import org.osgl.mvc.result.Result;
 import org.osgl.util.*;
 
 import javax.validation.constraints.NotNull;
 import java.util.Collection;
+
+import static act.controller.Controller.Util.notFound;
 
 public class FindBy extends ValueLoader.Base {
 
@@ -107,15 +109,15 @@ public class FindBy extends ValueLoader.Base {
         }
     }
 
-    private Object ensureNotNull(Object obj, String value) {
+    private Object ensureNotNull(Object obj, String value) throws Result {
         if (notNull) {
             if (null == obj) {
                 if (!Act.isDev()) {
-                    throw NotFound.get();
+                    throw notFound();
                 }
                 ActionContext ctx = ActionContext.current();
                 if (null == ctx) {
-                    throw NotFound.get();
+                    throw notFound();
                 }
                 RequestHandler handler = ctx.handler();
                 if (handler instanceof DelegateRequestHandler) {
@@ -125,7 +127,7 @@ public class FindBy extends ValueLoader.Base {
                     RequestHandlerProxy proxy = $.cast(handler);
                     throw proxy.notFoundOnMethod(S.fmt("%s not found by %s", spec.name(), value));
                 }
-                throw NotFound.get();
+                throw notFound();
             }
         }
         return obj;

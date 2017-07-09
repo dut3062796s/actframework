@@ -53,14 +53,13 @@ import org.osgl.inject.BeanSpec;
 import org.osgl.mvc.annotation.ResponseContentType;
 import org.osgl.mvc.annotation.ResponseStatus;
 import org.osgl.mvc.annotation.SessionFree;
-import org.osgl.mvc.result.BadRequest;
-import org.osgl.mvc.result.Conflict;
-import org.osgl.mvc.result.NotFound;
+import org.osgl.mvc.result.ErrorResult;
 import org.osgl.mvc.result.Result;
 import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
 
+import javax.naming.ldap.Control;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -69,6 +68,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static act.controller.Controller.Util.notFound;
 import static act.inject.param.JsonDTO.CTX_ATTR_KEY;
 
 /**
@@ -228,7 +228,7 @@ public class ReflectedHandlerInvoker<M extends HandlerMethodMetaInfo> extends De
 
     public Result handle(ActionContext context) throws Exception {
         if (disabled) {
-            return ActNotFound.get();
+            return notFound();
         }
 
         String urlContext = this.controller.contextPath();
@@ -259,7 +259,7 @@ public class ReflectedHandlerInvoker<M extends HandlerMethodMetaInfo> extends De
 
         if (failOnViolation && context.hasViolation()) {
             String msg = context.violationMessage(";");
-            return new BadRequest(msg);
+            return ActErrorResult.of(H.Status.BAD_REQUEST, msg);
         }
 
         if (hasOutputVar) {
@@ -329,7 +329,8 @@ public class ReflectedHandlerInvoker<M extends HandlerMethodMetaInfo> extends De
             } else {
                 App.LOGGER.warn(e, "error parsing JSON data");
             }
-            throw new BadRequest(e.getCause());
+            Throwable cause = e.getCause();
+            throw ActErrorResult.of(H.Status.BAD_REQUEST, cause.getLocalizedMessage()).initCause(cause);
         }
     }
 
@@ -441,7 +442,7 @@ public class ReflectedHandlerInvoker<M extends HandlerMethodMetaInfo> extends De
         String cacheKey = S.concat("DSP-", dspToken);
         String cached = session.cached(cacheKey);
         if (S.eq(tokenValue, cached)) {
-            throw Conflict.get();
+            throw Controller.Util.conflict();
         }
         session.cacheFor1Min(cacheKey, tokenValue);
     }
@@ -610,7 +611,7 @@ public class ReflectedHandlerInvoker<M extends HandlerMethodMetaInfo> extends De
         return Controller.Util.inferResult(handlerMetaInfo, result, context, hasTemplate);
     }
 
-    public NotFound notFoundOnMethod(String message) {
+    public ErrorResult notFoundOnMethod(String message) {
         return ActNotFound.create(method, message);
     }
 

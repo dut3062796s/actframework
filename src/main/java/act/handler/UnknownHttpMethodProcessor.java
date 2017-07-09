@@ -20,8 +20,10 @@ package act.handler;
  * #L%
  */
 
+import act.Act;
+import act.controller.Controller;
+import act.view.ActErrorResult;
 import org.osgl.http.H;
-import org.osgl.mvc.result.MethodNotAllowed;
 import org.osgl.mvc.result.Result;
 
 import java.io.Serializable;
@@ -37,7 +39,7 @@ public abstract class UnknownHttpMethodProcessor implements Serializable {
     private static class NotAllowed extends UnknownHttpMethodProcessor implements ExpressHandler {
         @Override
         public Result handle(H.Method method) {
-            return MethodNotAllowed.get();
+            return Act.isDev() ? ActErrorResult.of(H.Status.METHOD_NOT_ALLOWED) : Controller.METHOD_NOT_ALLOWED;
         }
 
         private Object readResolve() {
@@ -48,7 +50,7 @@ public abstract class UnknownHttpMethodProcessor implements Serializable {
     private static class NotImplemented extends UnknownHttpMethodProcessor implements ExpressHandler {
         @Override
         public Result handle(H.Method method) {
-            return org.osgl.mvc.result.NotImplemented.INSTANCE;
+            return Act.isDev() ? ActErrorResult.of(H.Status.NOT_IMPLEMENTED) : Controller.NOT_IMPLEMENTED;
         }
         private Object readResolve() {
             return NOT_IMPLEMENTED;

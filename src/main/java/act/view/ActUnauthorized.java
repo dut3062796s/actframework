@@ -1,25 +1,5 @@
 package act.view;
 
-/*-
- * #%L
- * ACT Framework
- * %%
- * Copyright (C) 2014 - 2017 ActFramework
- * %%
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #L%
- */
-
 import act.Act;
 import act.app.SourceInfo;
 import act.util.ActError;
@@ -27,6 +7,10 @@ import org.osgl.mvc.result.Unauthorized;
 
 import java.util.List;
 
+/**
+ * Decorate {@link org.osgl.mvc.result.Unauthorized} with Act Dev mode
+ * error reporting support
+ */
 public class ActUnauthorized extends Unauthorized implements ActError {
 
     private SourceInfo sourceInfo;
@@ -39,14 +23,8 @@ public class ActUnauthorized extends Unauthorized implements ActError {
     }
 
     public ActUnauthorized(String realm) {
-        super(realm);
-        if (Act.isDev()) {
-            loadSourceInfo();
-        }
-    }
-
-    public ActUnauthorized(String realm, boolean digest) {
-        super(realm, digest);
+        super();
+        realm(realm);
         if (Act.isDev()) {
             loadSourceInfo();
         }
@@ -76,16 +54,8 @@ public class ActUnauthorized extends Unauthorized implements ActError {
         return false;
     }
 
-    public static Unauthorized create() {
-        return Act.isDev() ? new ActUnauthorized() : Unauthorized.get();
-    }
-
     public static Unauthorized create(String realm) {
-        return Act.isDev() ? new ActUnauthorized(realm) : Unauthorized.of(realm);
-    }
-
-    public static Unauthorized create(String realm, boolean digest) {
-        return Act.isDev() ? new ActUnauthorized(realm, digest) : new Unauthorized(realm, digest);
+        return Act.isDev() ? new ActUnauthorized(realm) : new Unauthorized().realm(realm);
     }
 
 }
