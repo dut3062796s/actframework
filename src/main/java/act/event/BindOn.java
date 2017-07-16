@@ -1,4 +1,4 @@
-package act.view;
+package act.event;
 
 /*-
  * #%L
@@ -20,25 +20,27 @@ package act.view;
  * #L%
  */
 
-import act.app.ActionContext;
-import act.util.ActContext;
-import org.osgl.inject.BeanSpec;
+import act.app.event.AppEventId;
 
-public abstract class ActionViewVarDef extends VarDef {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    protected ActionViewVarDef(String name, Class<?> type) {
-        super(name, type);
-    }
+/**
+ * Specify the time to bind an {@link ActEventListener} to corresponding
+ * {@link ActEvent}
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface BindOn {
 
-    protected ActionViewVarDef(String name, BeanSpec spec) {
-        super(name, spec);
-    }
+    /**
+     * Specify the ID of the {@link act.app.event.AppEvent} when
+     * the binding should happen
+     *
+     * @return the app event ID
+     */
+    AppEventId value();
 
-
-    @Override
-    public final Object evaluate(ActContext context) {
-        return eval((ActionContext) context);
-    }
-
-    public abstract Object eval(ActionContext context);
 }

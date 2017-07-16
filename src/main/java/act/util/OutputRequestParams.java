@@ -1,4 +1,4 @@
-package act.view;
+package act.util;
 
 /*-
  * #%L
@@ -20,25 +20,16 @@ package act.view;
  * #L%
  */
 
-import act.app.ActionContext;
-import act.util.ActContext;
-import org.osgl.inject.BeanSpec;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public abstract class ActionViewVarDef extends VarDef {
-
-    protected ActionViewVarDef(String name, Class<?> type) {
-        super(name, type);
-    }
-
-    protected ActionViewVarDef(String name, BeanSpec spec) {
-        super(name, spec);
-    }
-
-
-    @Override
-    public final Object evaluate(ActContext context) {
-        return eval((ActionContext) context);
-    }
-
-    public abstract Object eval(ActionContext context);
+/**
+ * Mark on a controller action method that all request parameters to be output into
+ * template (i.e. add em into the render argument list or JSON fields)
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface OutputRequestParams {
 }

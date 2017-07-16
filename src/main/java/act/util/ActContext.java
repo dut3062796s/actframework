@@ -325,6 +325,10 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             return C.newMap(renderArgs);
         }
 
+        protected boolean hasRenderArgs() {
+            return !renderArgs.isEmpty();
+        }
+
         /**
          * Associate a user attribute to the context. Could be used by third party
          * libraries or user application
@@ -401,11 +405,11 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             if (null != ctx) {
                 return ctx;
             }
-            ctx = MailerContext.current();
+            ctx = CliContext.current();
             if (null != ctx) {
                 return ctx;
             }
-            ctx = CliContext.current();
+            ctx = MailerContext.current();
             if (null != ctx) {
                 return ctx;
             }
