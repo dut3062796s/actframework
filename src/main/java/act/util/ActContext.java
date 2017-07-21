@@ -50,16 +50,29 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
     Locale locale();
     Locale locale(boolean required);
     /**
-     * If {@link #templatePath(String) template path has been set before} then return
-     * the template path
+     * Returns the template path
+     * @return the template path
      */
     String templatePath();
+
+    /**
+     * Returns the template content
+     * @return the template content
+     */
+    String templateContent();
     /**
      * Set path to template file
      * @param path the path to template file
      * @return this {@code AppContext}
      */
     CTX_TYPE templatePath(String path);
+
+    /**
+     * Set template content
+     * @param templateContent the template content
+     * @return this {@code AppContext}
+     */
+    CTX_TYPE templateContent(String templateContent);
 
     /**
      * Returns the template context
@@ -136,6 +149,7 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
 
         private App app;
         private String templatePath;
+        private String templateContent;
         private String templateContext;
         private Template template;
         private Map<String, Object> renderArgs;
@@ -143,6 +157,7 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
         private List<Destroyable> destroyableList;
         private Map<String, Object> attributes;
         private Locale locale;
+        private int fieldOutputVarCount;
         private S.Buffer strBuf;
 
         // (violation.propertyPath, violation)
@@ -205,11 +220,30 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             }
         }
 
+        public String templateContent() {
+            return templateContent;
+        }
+
         @Override
         public CTX templatePath(String templatePath) {
             this.template = null;
+            this.templateContent = null;
             this.templatePath = templatePath;
             return me();
+        }
+
+        @Override
+        public CTX templateContent(String templateContent) {
+            this.template = null;
+            this.templateContent = templateContent;
+            return me();
+        }
+
+        public CTX templateLiteral(String literal) {
+            if (S.empty(literal)) {
+                return me();
+            }
+            return isTemplatePath(literal) ? templatePath(literal) : templateContent(literal);
         }
 
         public String templateContext() {
@@ -320,6 +354,16 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             return me();
         }
 
+        // see https://github.com/actframework/actframework/issues/312
+        public CTX fieldOutputVarCount(int count) {
+            this.fieldOutputVarCount = count;
+            return me();
+        }
+
+        public int fieldOutputVarCount() {
+            return fieldOutputVarCount;
+        }
+
         @Override
         public Map<String, Object> renderArgs() {
             return C.newMap(renderArgs);
@@ -419,6 +463,57 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
         public static Class<? extends ActContext> currentContextType() {
             ActContext ctx = currentContext();
             return null == ctx ? null : ctx.getClass();
+        }
+
+        /**
+         * Check if a given string is a template path or template content
+         *
+         * If the string contains anyone the following characters then we assume it
+         * is content, otherwise it is path:
+         *
+         * * space characters
+         * * non numeric-alphabetic characters except:
+         * ** dot "."
+         * ** dollar: "$"
+         *
+         * @param string the string to be tested
+         * @return `true` if the string literal is template content or `false` otherwise
+         */
+        private boolean isTemplatePath(String string) {
+            int sz = string.length();
+            if (sz == 0) {
+                return true;
+            }
+            for (int i = 0; i < sz; ++i) {
+                char c = string.charAt(i);
+                switch (c) {
+                    case ' ':
+                    case '\t':
+                    case '\b':
+                    case '<':
+                    case '>':
+                    case '(':
+                    case ')':
+                    case '[':
+                    case ']':
+                    case '{':
+                    case '}':
+                    case '!':
+                    case '@':
+                    case '#':
+                    case '*':
+                    case '?':
+                    case '%':
+                    case '|':
+                    case ',':
+                    case ':':
+                    case ';':
+                    case '^':
+                    case '&':
+                        return false;
+                }
+            }
+            return true;
         }
     }
 }

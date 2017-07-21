@@ -71,6 +71,15 @@ public abstract class View extends AppServicePlugin {
     protected abstract Template loadTemplate(String resourcePath, ActContext context);
 
     /**
+     * Sub class must implement this method to load the template from string literal
+     * @param content the template content string literal
+     * @param context the view context
+     * @return the template instance
+     * @since 1.5
+     */
+    protected abstract Template loadInlineTemplate(String content, ActContext context);
+
+    /**
      * Sub class could use this method initialize the implementation
      */
     protected void init(App app) {

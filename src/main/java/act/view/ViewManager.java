@@ -114,20 +114,34 @@ public class ViewManager extends DestroyableBase {
             return cached;
         }
 
-        TemplatePathResolver resolver = config.templatePathResolver();
+        Template template;
 
-        String path = resolver.resolve(context);
-        Template template = getTemplate(context, config, path);
-        if (null == template) {
-            String amendedPath = resolver.resolveWithContextMethodPath(context);
-            if (S.neq(amendedPath, path)) {
-                template = getTemplate(context, config, amendedPath);
-                if (null != template) {
-                    context.templatePath(amendedPath);
+        String templateContent = context.templateContent();
+        if (S.notEmpty(templateContent)) {
+            template = getInlineTemplate(context, config, templateContent);
+        } else {
+            TemplatePathResolver resolver = config.templatePathResolver();
+            String path = resolver.resolve(context);
+            template = getTemplate(context, config, path);
+            if (null == template) {
+                String amendedPath = resolver.resolveWithContextMethodPath(context);
+                if (S.neq(amendedPath, path)) {
+                    template = getTemplate(context, config, amendedPath);
+                    if (null != template) {
+                        context.templatePath(amendedPath);
+                    }
                 }
             }
         }
         return template;
+    }
+
+    private Template getInlineTemplate(ActContext context, AppConfig config, String content) {
+        View defView = config.defaultView();
+        if (null != defView && defView.appliedTo(context)) {
+            return defView.loadInlineTemplate(content, context);
+        }
+        return null;
     }
 
     private Template getTemplate(ActContext context, AppConfig config, String path) {

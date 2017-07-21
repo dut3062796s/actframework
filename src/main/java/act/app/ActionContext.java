@@ -231,6 +231,11 @@ public class ActionContext extends ActContext.Base<ActionContext> implements Des
         return super.templatePath(templatePath);
     }
 
+    @Override
+    public ActionContext templateLiteral(String literal) {
+        return super.templateLiteral(literal);
+    }
+
     public RequestHandler handler() {
         return handler;
     }
@@ -251,7 +256,7 @@ public class ActionContext extends ActContext.Base<ActionContext> implements Des
     }
 
     public Boolean hasTemplate() {
-        return hasTemplate;
+        return (null != hasTemplate && hasTemplate) || S.notEmpty(templateContent());
     }
 
     public ActionContext setHasTemplate(boolean b) {
@@ -422,8 +427,16 @@ public class ActionContext extends ActContext.Base<ActionContext> implements Des
 
     public Result nullValueResult() {
         if (hasRenderArgs()) {
-            return new RenderAny();
+            RenderAny result = new RenderAny();
+            if (renderArgs().size() == fieldOutputVarCount() && req().isAjax()) {
+                result.ignoreMissingTemplate();
+            }
+            return result;
         }
+        return nullValueResultIgnoreRenderArgs();
+    }
+
+    public Result nullValueResultIgnoreRenderArgs() {
         if (null != forceResponseStatus) {
             return new Result(forceResponseStatus){};
         } else {

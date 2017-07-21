@@ -147,9 +147,16 @@ public class MailerContext extends ActContext.Base<MailerContext> {
         return null != fmt ? fmt : mailerConfig().contentType();
     }
 
+    // overwrite for bytecode enhancement
     @Override
     public MailerContext templatePath(String templatePath) {
         return super.templatePath(templatePath);
+    }
+
+    // overwrite for bytecode enhancement
+    @Override
+    public MailerContext templateLiteral(String literal) {
+        return super.templateLiteral(literal);
     }
 
     @Override
