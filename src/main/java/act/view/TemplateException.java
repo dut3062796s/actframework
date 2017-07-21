@@ -41,7 +41,11 @@ public abstract class TemplateException extends ActErrorResult {
         return templateInfo;
     }
 
-    public abstract String errorMessage();
+    public String errorMessage() {
+        Throwable t = getRootCause();
+        String msg = t.getLocalizedMessage();
+        return S.blank(msg) ? t.toString() : msg;
+    }
 
     @Override
     public boolean isErrorSpot(String traceLine, String nextTraceLine) {

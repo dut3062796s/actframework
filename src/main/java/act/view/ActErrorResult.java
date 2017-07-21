@@ -112,8 +112,19 @@ public class ActErrorResult extends ErrorResult implements ActError {
 
     @Override
     public Throwable getCauseOrThis() {
-        Throwable cause = getCause();
-        return null == cause ? this : cause;
+        Throwable t = this.getCause();
+        return null == t ? this : t;
+    }
+
+    public Throwable getRootCause() {
+        Throwable t = this;
+        while (null != t) {
+            if (null == t.getCause()) {
+                return t;
+            }
+            t = t.getCause();
+        }
+        return t;
     }
 
     public SourceInfo sourceInfo() {

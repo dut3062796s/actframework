@@ -23,6 +23,7 @@ package act.view;
 import act.app.SourceInfo;
 import org.osgl.util.C;
 import org.osgl.util.E;
+import org.osgl.util.S;
 import org.rythmengine.exception.RythmException;
 
 public class RythmTemplateException extends TemplateException {
@@ -37,7 +38,8 @@ public class RythmTemplateException extends TemplateException {
         if (t instanceof RythmException) {
             return ((RythmException) t).errorDesc();
         }
-        return t.toString();
+        String msg = t.getLocalizedMessage();
+        return S.blank(msg) ? t.toString() : msg;
     }
 
     @Override

@@ -256,7 +256,10 @@ public class ActionContext extends ActContext.Base<ActionContext> implements Des
     }
 
     public Boolean hasTemplate() {
-        return (null != hasTemplate && hasTemplate) || S.notEmpty(templateContent());
+        if ((null != hasTemplate && hasTemplate) || S.notEmpty(templateContent())) {
+            return true;
+        }
+        return hasTemplate;
     }
 
     public ActionContext setHasTemplate(boolean b) {
