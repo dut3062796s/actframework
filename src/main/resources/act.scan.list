@@ -16,3 +16,4 @@ act.validation.ValidationPlugin
 act.Zen
 org.osgl.util.FastJsonKvCodec
 act.ws.WebSocketAdminConsole
+act.job.JobAdmin.WebsocketEndpoints.JobProgress

@@ -30,6 +30,8 @@ import act.mail.MailerContext;
 import act.view.Template;
 import org.osgl.$;
 import org.osgl.http.H;
+import org.osgl.logging.LogManager;
+import org.osgl.logging.Logger;
 import org.osgl.mvc.util.ParamValueProvider;
 import org.osgl.util.C;
 import org.osgl.util.E;
@@ -38,8 +40,6 @@ import org.osgl.util.S;
 import javax.enterprise.context.RequestScoped;
 import javax.validation.ConstraintViolation;
 import java.util.*;
-
-import static act.app.App.LOGGER;
 
 public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvider {
     App app();
@@ -145,7 +145,11 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
         void onDestroy(ActContext context);
     }
 
-    abstract class Base<CTX extends Base> extends DestroyableBase implements ActContext<CTX> {
+    abstract class Base<CTX extends Base> extends DestroyableBase
+            implements ActContext<CTX> {
+
+        public static final String DEF_RESOURCE_BUNDLE_NAME = I18n.DEF_RESOURCE_BUNDLE_NAME;
+        protected final Logger LOGGER = LogManager.get(getClass());
 
         private App app;
         private String templatePath;
@@ -159,6 +163,8 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
         private Locale locale;
         private int fieldOutputVarCount;
         private S.Buffer strBuf;
+        private SimpleProgressGauge progress = new SimpleProgressGauge();
+        private String jobId;
 
         // (violation.propertyPath, violation)
         private Map<String, ConstraintViolation> violations;
@@ -193,6 +199,7 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             this.listenerList.clear();
             this.destroyableList.clear();
             this.violations.clear();
+            this.progress.destroy();
         }
 
         @Override
@@ -297,7 +304,6 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             return locale;
         }
 
-        public static final String DEF_RESOURCE_BUNDLE_NAME = I18n.DEF_RESOURCE_BUNDLE_NAME;
 
         public String i18n(boolean ignoreError, String msgId, Object... args) {
             return I18n.i18n(ignoreError, locale(true), I18n.DEF_RESOURCE_BUNDLE_NAME, msgId, args);
@@ -444,8 +450,17 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             return this.violations.get(property);
         }
 
-        public static ActContext currentContext() {
-            ActContext ctx = ActionContext.current();
+        public void setJobId(String jobId) {
+            this.jobId = jobId;
+            app().jobManager().setJobProgressGauge(jobId, progress);
+        }
+
+        public ProgressGauge progress() {
+            return progress;
+        }
+
+        public static ActContext.Base<?> currentContext() {
+            ActContext.Base<?> ctx = ActionContext.current();
             if (null != ctx) {
                 return ctx;
             }
