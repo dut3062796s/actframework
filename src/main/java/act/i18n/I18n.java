@@ -42,6 +42,8 @@ public class I18n {
 
     public static final String DEF_RESOURCE_BUNDLE_NAME = "messages";
 
+    public static final String ACT_RESOURCE_BUNDLE_NAME = "act_message";
+
     public static Locale locale() {
         ActContext context = ActContext.Base.currentContext();
         return null != context ? context.locale(true) : Act.appConfig().locale();

@@ -33,6 +33,7 @@ public class SimpleProgressGauge extends DestroyableBase implements ProgressGaug
     private int currentSteps;
     private ProgressGauge delegate;
     private List<Listener> listeners = new ArrayList<>();
+    private boolean interrupted;
 
     private SimpleProgressGauge(ProgressGauge delegate) {
         this.delegate = $.notNull(delegate);
@@ -104,6 +105,21 @@ public class SimpleProgressGauge extends DestroyableBase implements ProgressGaug
     }
 
     @Override
+    public void interrupt() {
+        this.interrupted = true;
+    }
+
+    @Override
+    public void reset() {
+        if (null != delegate) {
+            delegate.reset();
+        } else {
+            currentSteps = 0;
+            interrupted = false;
+        }
+    }
+
+    @Override
     public int currentSteps() {
         if (null != delegate) {
             return delegate.currentSteps();
@@ -132,6 +148,16 @@ public class SimpleProgressGauge extends DestroyableBase implements ProgressGaug
             return delegate.done();
         }
         return currentSteps == maxHint;
+    }
+
+    @Override
+    public boolean interrupted() {
+        return null != delegate ? delegate.interrupted() : interrupted;
+    }
+
+    @Override
+    public boolean inProgress() {
+        return !done() && !interrupted();
     }
 
     private void triggerUpdateEvent() {

@@ -306,11 +306,16 @@ class _Job extends DestroyableBase implements Runnable {
 
     protected void doJob() {
         try {
+            progress().reset();
             _before();
             if (null != worker) {
                 worker.apply();
             }
         } finally {
+            ProgressGauge progressGauge = progress();
+            if (!progressGauge.done()) {
+                progressGauge.interrupt();
+            }
             scheduleNextInvocation();
             _finally();
         }

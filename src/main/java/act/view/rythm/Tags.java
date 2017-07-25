@@ -101,7 +101,7 @@ public class Tags {
             } else {
                 args = new Object[0];
             }
-            p(I18n.i18n(I18n.locale(), "act_message", msg, args));
+            p(I18n.i18n(I18n.locale(), I18n.ACT_RESOURCE_BUNDLE_NAME, msg, args));
         }
     }
 

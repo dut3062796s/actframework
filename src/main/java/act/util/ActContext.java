@@ -117,6 +117,10 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
 
     String i18n(String msgId, Object ... args);
 
+    String i18n(String bundleName, String msgId, Object... args);
+
+    String i18n(boolean ignoreError, String bundleName, String msgId, Object... args);
+
     String i18n(Class<?> bundleSpec, String msgId, Object... args);
 
     String i18n(boolean ignoreError, Class<?> bundleSpec, String msgId, Object... args);
@@ -317,8 +321,16 @@ public interface ActContext<CTX_TYPE extends ActContext> extends ParamValueProvi
             return I18n.i18n(locale(true), bundleSpec.getName(), msgId, args);
         }
 
+        public String i18n(String bundleName, String msgId, Object... args) {
+            return I18n.i18n(locale(true), bundleName, msgId, args);
+        }
+
         public String i18n(boolean ignoreError, Class<?> bundleSpec, String msgId, Object... args) {
             return I18n.i18n(ignoreError, locale(true), bundleSpec.getName(), msgId, args);
+        }
+
+        public String i18n(boolean ignoreError, String bundleName, String msgId, Object... args) {
+            return I18n.i18n(ignoreError, locale(true), bundleName, msgId, args);
         }
 
         public String i18n(Enum<?> msgId) {

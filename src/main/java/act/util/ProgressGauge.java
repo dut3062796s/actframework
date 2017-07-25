@@ -52,6 +52,11 @@ public interface ProgressGauge {
     void stepTo(int steps);
 
     /**
+     * mark the progress has been interrupted (by error e.g.)
+     */
+    void interrupt();
+
+    /**
      * Report the current progress steps
      *
      * @return the current progress
@@ -66,9 +71,31 @@ public interface ProgressGauge {
     int maxHint();
 
     /**
-     * Mark the progress has been finished
+     * Check if the work is still in progress.
+     *
+     * Note when `inProgress()` returns `true` it means
+     * the work is neither `done()` nor `interrupted()`
+     *
+     * @return `true` if the work is still in progress or `false` if the work is finished or interrupted
+     */
+    boolean inProgress();
+
+    /**
+     * Check if the progress is finished
+     * @return `true` if the progress is finished or `false` otherwise
      */
     boolean done();
+
+    /**
+     * Check if the progress has been interrupted due to an error
+     * @return `true` if the progress is broken or `false` otherwise
+     */
+    boolean interrupted();
+
+    /**
+     * Reset the progress gauge
+     */
+    void reset();
 
     /**
      * Add an listener to this gauge that monitors the progress update

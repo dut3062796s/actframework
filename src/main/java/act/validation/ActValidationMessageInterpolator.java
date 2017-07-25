@@ -58,7 +58,7 @@ public class ActValidationMessageInterpolator extends DestroyableBase implements
         if (null == locale) {
             locale = I18n.locale();
         }
-        return I18n.i18n(locale, "act_message", messageTemplate);
+        return I18n.i18n(locale, I18n.ACT_RESOURCE_BUNDLE_NAME, messageTemplate);
     }
 
 }

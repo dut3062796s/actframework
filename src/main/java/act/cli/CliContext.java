@@ -30,6 +30,7 @@ import act.cli.builtin.Exit;
 import act.cli.builtin.Help;
 import act.cli.util.CommandLineParser;
 import act.handler.CliHandler;
+import act.i18n.I18n;
 import act.util.ActContext;
 import act.util.ProgressGauge;
 import act.util.PropertySpec;
@@ -325,22 +326,21 @@ public class CliContext extends ActContext.Base<CliContext> implements IASCIITab
 
     public void printBar(ProgressGauge progressGauge) {
         PrintStream os = new PrintStream(new WriterOutputStream(rawPrint ? pw : console.getOutput()));
-        String label = app().config().i18nEnabled() ? i18n("act.progress.capFirst") : "Progress";
+        String label = app().config().i18nEnabled() ? i18n(I18n.ACT_RESOURCE_BUNDLE_NAME, "act.progress.capFirst") : "Progress";
         ProgressBar pb = new ProgressBar(label, progressGauge.maxHint(), 200, os, ProgressBarStyle.UNICODE_BLOCK);
         pb.start();
-        while (!progressGauge.done()) {
+        while (progressGauge.inProgress()) {
             pb.maxHint(progressGauge.maxHint());
             pb.stepTo(progressGauge.currentSteps());
             flush();
         }
-        pb.stepTo(pb.getMax());
         pb.stop();
     }
 
     public void printText(ProgressGauge progressGauge) {
         SimpleProgressGauge simpleProgressGauge = SimpleProgressGauge.wrap(progressGauge);
         boolean i18n = app().config().i18nEnabled();
-        while (!progressGauge.done()) {
+        while (progressGauge.inProgress()) {
             if (i18n) {
                 print("\r" + i18n("act.progress.report", simpleProgressGauge.currrentProgressPercent()));
             } else {
